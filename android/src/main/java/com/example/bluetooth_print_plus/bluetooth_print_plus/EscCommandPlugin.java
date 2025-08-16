@@ -112,9 +112,8 @@ public class EscCommandPlugin implements FlutterPlugin, MethodCallHandler, Reque
                     default:
                         break;
                 }
-                this.getEscCommand().addText(content);
-                // this.getEscCommand().addSetCharcterSize(EscCommand.WIDTH_ZOOM.MUL_1, EscCommand.HEIGHT_ZOOM.MUL_1);
-                // this.getEscCommand().addSelectPrintModes(EscCommand.FONT.FONTA, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF);
+                this.getEscCommand().addSelectCodePage(EscCommand.CODEPAGE.PC852);
+                this.getEscCommand().addText(content, "CP852");
                 result.success(true);
                 break;
             case "code128":
@@ -153,6 +152,8 @@ public class EscCommandPlugin implements FlutterPlugin, MethodCallHandler, Reque
                 this.getEscCommand().addSelectErrorCorrectionLevelForQRCode((byte) 0x31);
                 this.getEscCommand().addSelectSizeOfModuleForQRCode((byte)sizee.intValue());
                 this.getEscCommand().addStoreQRCodeData(content);
+                this.getEscCommand().addPrintQRCode();
+
                 result.success(true);
                 break;
             case "image":
