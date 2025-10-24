@@ -236,7 +236,7 @@ public class BluetoothPrintPlusPlugin
           result.success(BPPState.BlueOff.getValue());
           break;
         case BluetoothAdapter.STATE_ON:
-          result.success(BBPPState.BlueOn.getValue());
+          result.success(BPPState.BlueOn.getValue());
           break;
         default:
           break;
