@@ -236,7 +236,7 @@ public class BluetoothPrintPlusPlugin
           result.success(BPPState.BlueOff.getValue());
           break;
         case BluetoothAdapter.STATE_ON:
-          result.success(BPPState.BlueOn.getValue());
+          result.success(BBPPState.BlueOn.getValue());
           break;
         default:
           break;
@@ -250,24 +250,27 @@ public class BluetoothPrintPlusPlugin
     LogUtils.i(TAG, "start scan...");
     try {
       String[] perms = {
-          Manifest.permission.BLUETOOTH,
-          Manifest.permission.BLUETOOTH_ADMIN,
-          Manifest.permission.BLUETOOTH_CONNECT,
-          Manifest.permission.BLUETOOTH_SCAN,
-          Manifest.permission.ACCESS_FINE_LOCATION,
+              Manifest.permission.BLUETOOTH,
+              Manifest.permission.BLUETOOTH_ADMIN,
+              Manifest.permission.BLUETOOTH_CONNECT,
+              Manifest.permission.BLUETOOTH_SCAN,
+              Manifest.permission.ACCESS_FINE_LOCATION,
       };
       if (EasyPermissions.hasPermissions(this.context, perms)) {
         // Already have permission, do the thing
-        startScan();
+        startScan(); // This is the private method without args
+        result.success(null); // We can resolve immediately
       } else {
         // Do not have permissions, request them now
+        // 1. Save the result object to be used in the callback
+        this.pendingResult = result;
         EasyPermissions.requestPermissions(
                 this.activity,
                 "Bluetooth requires location permission!!!",
                 REQUEST_LOCATION_PERMISSIONS,
                 perms);
+        // 2. DO NOT call result.success(null) here. Wait for the callback.
       }
-      result.success(null);
     } catch (Exception e) {
       result.error("startScan", e.getMessage(), e);
     }
@@ -361,13 +364,35 @@ public class BluetoothPrintPlusPlugin
   @Override
   public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
     LogUtils.d(TAG, "onRequestPermissionsResult");
+
+    // Add a null check for pendingResult. This can happen if the activity
+    // was destroyed and recreated while the dialog was open.
+    if (pendingResult == null) {
+      LogUtils.w(TAG, "pendingResult was null, permission result will be ignored.");
+      return true; // We handled the code, but had no result to send.
+    }
+
     if (requestCode == REQUEST_LOCATION_PERMISSIONS) {
-      if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-        startScan();
+      // Check if all permissions were granted, not just the first one
+      boolean allGranted = true;
+      if (grantResults.length == 0) {
+        allGranted = false; // User cancelled
+      } else {
+        for (int grant : grantResults) {
+          if (grant != PackageManager.PERMISSION_GRANTED) {
+            allGranted = false;
+            break;
+          }
+        }
+      }
+
+      if (allGranted) {
+        startScan(); // Start the actual scan
+        pendingResult.success(null); // Report success back to Dart
       } else {
         pendingResult.error("no_permissions", "this plugin requires location permissions for scanning", null);
-        pendingResult = null;
       }
+      pendingResult = null; // Clear the result, it has been used.
       return true;
     }
     return false;
